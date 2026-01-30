@@ -1,3 +1,9 @@
+Modified:
+
+- Remove all language and voice selection to use the default language and voice of the system.
+
+---
+
 # Anki Generate Audio for Terms
 
 This Anki add-on automatically generates audio files for vocabulary terms using your macOS system's built-in `say` command, then converts the audio to MP3 using `ffmpeg`. It's designed to make it quick and easy to add pronunciation audio to your flashcards without leaving Anki.

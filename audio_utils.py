@@ -26,11 +26,11 @@ def get_output_paths(term, media_dir):
     mp3_path = os.path.join(media_dir, filename)
     return aiff_path, mp3_path, filename
 
-def synthesize_audio(term, voice, aiff_path):
+def synthesize_audio(term, aiff_path):
     """
     Use macOS 'say' command to synthesize speech into an AIFF file.
     """
-    subprocess.run(['say', '-v', voice, '-o', aiff_path, term], check=True)
+    subprocess.run(['say', '-o', aiff_path, term], check=True)
 
 def convert_to_mp3(aiff_path, mp3_path):
     """

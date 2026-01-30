@@ -11,27 +11,8 @@ import re
 from bs4 import BeautifulSoup
 import html
 
-# --- helpers ---------------------------------------------------------------
-
-def find_audio_field(note: Note):
-    """Return the name of the first field that looks like an audio field.
-    Falls back to 'Audio' if present, otherwise None.
-    """
-    # Prefer an explicit field containing 'audio' (case-insensitive)
-    for f in note.model()["flds"]:
-        if "audio" in f["name"].lower():
-            return f["name"]
-    # Fallbacks
-    if "Audio" in note:  # exact match
-        return "Audio"
-    return None
-
 def generate_audio_for_note(note: Note, replace_existing=False):
     import time
-    audio_field = find_audio_field(note)
-    if not audio_field:
-        showInfo("⚠️ Skipped a note because no 'Audio' field was found in this note type.")
-        return
     raw_term = note["term"] if "term" in note else ""
     print("📦 RAW TERM:", repr(raw_term))
     unescaped = html.unescape(raw_term)
@@ -50,9 +31,6 @@ def generate_audio_for_note(note: Note, replace_existing=False):
     temp_aiff_path = os.path.join(media_dir, f"{sanitized_term}_{int(time.time())}.aiff")
 
     if os.path.exists(media_path) and not replace_existing:
-        # Audio file already exists; make sure the note references it
-        note[audio_field] = f"[sound:{filename}]"
-        note.flush()
         return
 
     try:
@@ -67,15 +45,18 @@ def generate_audio_for_note(note: Note, replace_existing=False):
         if os.path.exists(temp_aiff_path):
             os.remove(temp_aiff_path)
 
-    note[audio_field] = f"[sound:{filename}]"
+    note["Audio"] = f"[sound:{filename}]"
     note.flush()
 
 def run_audio_generation():
-    replace = askUser("Replace existing audio files?", defaultno=True)
+    replace = askUser("Do you want to replace existing audio files?", defaultno=True)
+    if not replace:
+        return
+
     media_dir = mw.col.media.dir()
     print(f"Media directory: {media_dir}")
 
     for note in mw.col.notes():
-        generate_audio_for_note(note, replace_existing=replace)
+        generate_audio_for_note(note, replace)
 
 addHook("profileLoaded", run_audio_generation)

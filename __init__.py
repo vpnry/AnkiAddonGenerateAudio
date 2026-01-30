@@ -12,17 +12,13 @@ from aqt.utils import showInfo
 from anki.notes import Note
 
 # Importing helper utilities and modules
-from .voice_registry import get_installed_voices
 from .audio_utils import normalize_term, get_output_paths, synthesize_audio, convert_to_mp3
-from .locale_map import get_display_name, get_locale_map
 from .audio_generation_mode import get_generation_mode
-from .select_language import select_language
-from .select_voice import select_voice_for_language
 from .note_updates import process_notes
 from .select_deck import select_decks
 
-def generate_audio_for_note(note: Note, voice: str, replace_existing=False):
-    """Generate audio for a single Anki note's 'term' field using the specified voice."""
+def generate_audio_for_note(note: Note, replace_existing=False):
+    """Generate audio for a single Anki note's 'term' field using the system default voice."""
     term = note["term"].strip() if "term" in note else ""
     unescaped = html.unescape(term)
     soup = BeautifulSoup(unescaped, "html.parser")
@@ -36,13 +32,10 @@ def generate_audio_for_note(note: Note, voice: str, replace_existing=False):
     temp_aiff_path, media_path, filename = get_output_paths(term, media_dir)
 
     if os.path.exists(media_path) and not replace_existing:
-        # File already exists; just link it in the note
-        note["Audio"] = f"[sound:{filename}]"
-        note.flush()
         return
 
     try:
-        synthesize_audio(term, voice, temp_aiff_path)
+        synthesize_audio(term, temp_aiff_path)
         convert_to_mp3(temp_aiff_path, media_path)
     except Exception as e:
         showInfo(f"❌ Error generating audio for '{term}': {e}")
@@ -59,25 +52,11 @@ def run_audio_generation():
     if not selected_decks:
         return
 
-    voices = get_installed_voices()
-    if not voices:
-        showInfo("❌ Could not retrieve voices from macOS.")
-        return
-
     replace = get_generation_mode()
     if replace is None:
         return
 
-    locale_map = get_locale_map()
-    lang_choice = select_language(voices, locale_map)
-    if not lang_choice:
-        return
-
-    voice_choice = select_voice_for_language(lang_choice, voices)
-    if not voice_choice:
-        return
-
-    process_notes(voice_choice, replace, generate_audio_for_note, selected_decks)
+    process_notes(replace, generate_audio_for_note, selected_decks)
 
 # Register a menu item in Anki's Tools menu
 action = QAction("🔊 Generate Audio for Notes", mw)
