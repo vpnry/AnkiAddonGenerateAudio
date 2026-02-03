@@ -14,8 +14,9 @@ from anki.notes import Note
 # Importing helper utilities and modules
 from .audio_utils import normalize_term, get_output_paths, synthesize_audio, convert_to_mp3
 from .audio_generation_mode import get_generation_mode
-from .note_updates import process_notes
+from .note_updates import process_notes, process_selected_notes
 from .select_deck import select_decks
+from aqt import gui_hooks
 
 def generate_audio_for_note(note: Note, replace_existing=False):
     """Generate audio for a single Anki note's 'term' field using the system default voice."""
@@ -57,6 +58,28 @@ def run_audio_generation():
         return
 
     process_notes(replace, generate_audio_for_note, selected_decks)
+
+def generate_audio_for_selected_browser_notes(browser):
+    """Generate audio for notes selected in the browser."""
+    note_ids = browser.selected_notes()
+    if not note_ids:
+        showInfo("Please select at least one note.")
+        return
+
+    replace = get_generation_mode()
+    if replace is None:
+        return
+
+    process_selected_notes(note_ids, replace, generate_audio_for_note)
+
+def on_browser_menus_did_init(browser):
+    """Add a menu item to the Browser's Edit menu."""
+    action = QAction("🔊 Generate Audio for Selected Notes", browser)
+    qconnect(action.triggered, lambda: generate_audio_for_selected_browser_notes(browser))
+    browser.form.menuEdit.addAction(action)
+
+# Register callbacks
+gui_hooks.browser_menus_did_init.append(on_browser_menus_did_init)
 
 # Register a menu item in Anki's Tools menu
 action = QAction("🔊 Generate Audio for Notes", mw)
