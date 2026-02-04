@@ -26,7 +26,8 @@ def generate_audio_for_note(note: Note, replace_existing=False):
     term = soup.get_text().strip()
 
     if not term:
-        showInfo("⚠️ Skipped a note because the 'term' field was empty.")
+        # Note: In background, we avoid direct UI calls. 
+        # For now, we skip silently or could log to a file.
         return
 
     media_dir = mw.col.media.dir()
@@ -39,12 +40,14 @@ def generate_audio_for_note(note: Note, replace_existing=False):
         synthesize_audio(term, temp_aiff_path)
         convert_to_mp3(temp_aiff_path, media_path)
     except Exception as e:
-        showInfo(f"❌ Error generating audio for '{term}': {e}")
+        # Avoid direct UI calls from background thread.
+        print(f"❌ Error generating audio for '{term}': {e}")
     finally:
         if os.path.exists(temp_aiff_path):
             os.remove(temp_aiff_path)
 
     note["Audio"] = f"[sound:{filename}]"
+    # note.flush() is generally safe in background if handled by collection lock (QueryOp handles this)
     note.flush()
 
 def run_audio_generation():
